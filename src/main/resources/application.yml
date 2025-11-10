@@ -9,6 +9,9 @@ spring:
     hibernate:
       ddl-auto: none
     open-in-view: false
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
 
@@ -62,7 +65,6 @@ app:
       chatId: ${TELEGRAM_CHAT_ID}
       maxMessagesPerRunPerPlatform: 10
       quietHours: { enabled: true, from: "22:00", to: "07:00" }
-
     discord:
       enabled: true
       webhookUrl: ${DISCORD_WEBHOOK_URL}
@@ -84,4 +86,3 @@ management:
     web:
       exposure:
         include: health,info,metrics
-

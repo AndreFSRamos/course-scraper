@@ -1,5 +1,7 @@
 INSERT INTO platform (name, base_url, enabled) VALUES
-  ('evg',   'https://www.escolavirtual.gov.br', 1),
-  ('fgv',   'https://educacao-executiva.fgv.br', 1),
-  ('sebrae','https://www.sebrae.com.br',        1)
-ON DUPLICATE KEY UPDATE base_url=VALUES(base_url), enabled=VALUES(enabled);
+  ('evg',   'https://www.escolavirtual.gov.br', TRUE),
+  ('fgv',   'https://educacao-executiva.fgv.br', TRUE),
+  ('sebrae','https://www.sebrae.com.br',        TRUE)
+ON CONFLICT (name) DO UPDATE
+SET base_url = EXCLUDED.base_url,
+    enabled  = EXCLUDED.enabled;
