@@ -1,0 +1,87 @@
+spring:
+  application:
+    name: cursos-scraper
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+
+app:
+  timezone: America/Sao_Paulo
+  platforms:
+    enabled: evg,fgv,sebrae
+  scrape:
+    connectors:
+      evg:
+        intervalMinutes: 720
+        jitterPercent: 15
+        rateLimitRps: 1
+        maxPagesPerRun: 100
+        timeouts:
+          connectMs: 10000
+          readMs: 20000
+          pageBudgetMs: 30000
+        backoffMinutes: [15, 30, 60, 120]
+
+      fgv:
+        intervalMinutes: 720
+        jitterPercent: 15
+        rateLimitRps: 1
+        maxPagesPerRun: 100
+        timeouts:
+          connectMs: 10000
+          readMs: 20000
+          pageBudgetMs: 30000
+        backoffMinutes: [15, 30, 60, 120]
+
+      sebrae:
+        intervalMinutes: 720
+        jitterPercent: 15
+        rateLimitRps: 1
+        maxPagesPerRun: 100
+        timeouts:
+          connectMs: 10000
+          readMs: 20000
+          pageBudgetMs: 30000
+        backoffMinutes: [15, 30, 60, 120]
+
+  notify:
+    perMessage: 8
+    maxNewCoursesPerRunPerPlatform: 40
+    pending:
+      fixedDelayMs: 60000
+    telegram:
+      enabled: true
+      botToken: ${TELEGRAM_BOT_TOKEN}
+      chatId: ${TELEGRAM_CHAT_ID}
+      maxMessagesPerRunPerPlatform: 10
+      quietHours: { enabled: true, from: "22:00", to: "07:00" }
+
+    discord:
+      enabled: true
+      webhookUrl: ${DISCORD_WEBHOOK_URL}
+
+  api:
+    public:
+      rateLimitPerIpPerMinute: 60
+      maxPageSize: 100
+      cacheSeconds: 60
+
+  features:
+    platforms:
+      evg: ${PLATFORM_EVG_ENABLED:true}
+      fgv: ${PLATFORM_FGV_ENABLED:true}
+      sebrae: ${PLATFORM_SEBRAE_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+

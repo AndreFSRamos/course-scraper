@@ -1,0 +1,54 @@
+CREATE TABLE platform (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  base_url VARCHAR(500) NOT NULL,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE course (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  platform_id BIGINT NOT NULL,
+  external_id_hash CHAR(64) NOT NULL,
+  title VARCHAR(500) NOT NULL,
+  url VARCHAR(1000) NOT NULL,
+  provider VARCHAR(200) NULL,
+  area VARCHAR(80) NULL,
+  free_flag TINYINT(1) NOT NULL DEFAULT 1,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  status_text VARCHAR(200) NULL,
+  price_text VARCHAR(200) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_course_platform FOREIGN KEY (platform_id) REFERENCES platform(id),
+  CONSTRAINT uq_course_external UNIQUE (external_id_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE course_snapshot (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  course_id BIGINT NOT NULL,
+  collected_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  status_text VARCHAR(200) NULL,
+  price_text VARCHAR(200) NULL,
+  raw_json LONGTEXT NULL,
+  CONSTRAINT fk_snapshot_course FOREIGN KEY (course_id) REFERENCES course(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE run_log (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  platform_id BIGINT NOT NULL,
+  started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finished_at TIMESTAMP NULL,
+  success_flag TINYINT(1) NOT NULL DEFAULT 0,
+  pages_scanned INT NOT NULL DEFAULT 0,
+  items_found INT NOT NULL DEFAULT 0,
+  items_new INT NOT NULL DEFAULT 0,
+  items_updated INT NOT NULL DEFAULT 0,
+  error_summary TEXT NULL,
+  CONSTRAINT fk_runlog_platform FOREIGN KEY (platform_id) REFERENCES platform(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX ix_course_platform_updated ON course(platform_id, updated_at DESC);
+CREATE INDEX ix_course_area_updated ON course(area, updated_at DESC);
