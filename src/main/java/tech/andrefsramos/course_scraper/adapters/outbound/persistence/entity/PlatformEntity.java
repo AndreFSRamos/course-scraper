@@ -1,10 +1,16 @@
 package tech.andrefsramos.course_scraper.adapters.outbound.persistence.entity;
 
 import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.util.Objects;
-
+@Setter
+@Getter
 @Entity
+@EqualsAndHashCode
+@ToString
 @Table(name = "platform")
 public class PlatformEntity {
     @Id
@@ -19,67 +25,5 @@ public class PlatformEntity {
 
     @Column(nullable = false)
     private Boolean enabled;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getBaseUrl() {
-        return baseUrl;
-    }
-
-    public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        PlatformEntity that = (PlatformEntity) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(name, that.name) &&
-                Objects.equals(baseUrl, that.baseUrl) &&
-                Objects.equals(enabled, that.enabled);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(
-                id,
-                name,
-                baseUrl,
-                enabled
-        );
-    }
-
-    @Override
-    public String toString() {
-        return "PlatformEntity{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", baseUrl='" + baseUrl + '\'' +
-                ", enabled=" + enabled +
-                '}';
-    }
 }
 

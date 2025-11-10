@@ -16,20 +16,37 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
 
-/**
- * Scraper FGV - Cursos Gratuitos (online)
- * Lista em https://educacao-executiva.fgv.br/cursos/gratuitos?page=N (N = 0,1,2,...)
+/*
+ * Finalidade
+
+ * Extrair cursos listados em “Cursos Gratuitos” da FGV Educação Executiva
+ * (zero-based): https://educacao-executiva.fgv.br/cursos/gratuitos?page=N
+
+ * Como funciona
+
+ * - Determina a base (Platform.baseUrl ou DEFAULT_BASE).
+ * - Página inicial: page=0 (zero-based).
+ * - Detecta a última página pelo paginador (ul.pagination a[href*="page="]); usa cap se não detectar.
+ * - Em cada página:
+ *   * Seleciona anchors que apontam para detalhe de curso: a[href^="/cursos/online/"] (dentro de <main>, com fallback).
+ *   * Filtra apenas “rotas de detalhe” (>= 4 segmentos após "/cursos/online/").
+ *   * Deduplica por URL absoluta; tenta recuperar título de elementos pais (h2/h3) se o <a> tiver texto curto.
+ * - Constrói Course com:
+ *   * provider="FGV", freeFlag=true (a listagem é “Gratuitos”), statusText/priceText vazios.
  */
+
 @Component
 public class FgvScraperAdapter implements ScraperPort {
-
     private static final Logger log = LoggerFactory.getLogger(FgvScraperAdapter.class);
-
     private static final String DEFAULT_BASE = "https://educacao-executiva.fgv.br";
-    private static final String LIST_PATH   = "/cursos/gratuitos?page="; // zero-based
-    private static final int TIMEOUT_MS     = 25000;
-
-    // UA de fallback quando HttpFetch não atender
+    private static final String LIST_PATH   = "/cursos/gratuitos?page=";
+    private static final int TIMEOUT_MS       = 25_000;
+    private static final int FETCH_RETRIES    = 2;
+    private static final long FETCH_BACKOFFMS = 400;
+    private static final int PAGE_CAP_MIN = 5;
+    private static final int PAGE_CAP_MAX = 200;
+    private static final int ITEM_CAP_HARD = 10_000;
+    private static final long PAGE_SLEEP_MS = 220;
     private static final String UA_BROWSER =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
@@ -40,93 +57,111 @@ public class FgvScraperAdapter implements ScraperPort {
 
     @Override
     public List<Course> fetchBatch(Platform platform, int maxPages) {
+        final long t0 = System.nanoTime();
+
         final String base = (platform != null && platform.baseUrl() != null && !platform.baseUrl().isBlank())
                 ? platform.baseUrl().trim() : DEFAULT_BASE;
 
-        // paginação zero-based
-        final int startPage   = 0;
-        final int hardPageCap = Math.min(Math.max(maxPages, 5), 200); // segurança
+        final int startPage = 0;
+        final int pageCap = Math.min(Math.max(maxPages, PAGE_CAP_MIN), PAGE_CAP_MAX);
+        final int itemCap = ITEM_CAP_HARD;
 
-        // 1) primeira página
-        String p0 = base + LIST_PATH + startPage;
+        log.info("FGV: início da coleta base={} startPage={} pageCap={} itemCap={}", base, startPage, pageCap, itemCap);
+
+        final String p0 = base + LIST_PATH + startPage;
         Document first = getDoc(p0);
         if (first == null) {
             log.warn("FGV: primeira página nula url={}", p0);
             return List.of();
         }
 
-        // 2) tenta detectar última página pelo componente de paginação (max page=)
         int last = detectLastPage(first);
         if (last < 0) {
-            // não achou paginação — usa teto de segurança
-            last = startPage + hardPageCap - 1;
+            last = startPage + pageCap - 1;
+            log.debug("FGV: última página não detectada; usando fallback last={}", last);
         } else {
-            // respeita teto adicional
-            last = Math.min(last, startPage + hardPageCap - 1);
+            last = Math.min(last, startPage + pageCap - 1);
+            log.debug("FGV: última página detectada last={} (após cap)", last);
         }
 
-        // 3) extrai anchors de detalhe "/cursos/online/..." página a página
-        Map<String, String> seen = new LinkedHashMap<>();
+        // 3) extrai anchors de detalhe página a página
+        final Map<String, String> seen = new LinkedHashMap<>();
+        String stopReason = "OK";
+
         for (int page = startPage; page <= last; page++) {
-            String url = base + LIST_PATH + page;
-            Document doc = (page == startPage) ? first : getDoc(url);
+            final String url = base + LIST_PATH + page;
+            final Document doc = (page == startPage) ? first : getDoc(url);
+
             if (doc == null) {
-                log.info("FGV: doc nulo page={} url={} (parando)", page, url);
+                log.warn("FGV: doc nulo page={} url={} (parando)", page, url);
+                stopReason = "DOC_NULL";
                 break;
             }
 
-            // Seletores:
-            //   - a[href^="/cursos/online/"]  -> links de detalhe
-            //   - filtragem por texto do anchor e pelo "profundidade" da rota para evitar tabs/menu
             Elements anchors = doc.select("main a[href^=\"/cursos/online/\"]");
             if (anchors.isEmpty()) {
-                // fallback mais amplo, ainda restrito ao prefixo
                 anchors = doc.select("a[href^=\"/cursos/online/\"]");
             }
 
-            int anchorsTot = anchors.size();
-            int add = 0;
+            final int anchorsTot = anchors.size();
+            if (anchorsTot == 0) {
+                log.warn("FGV: page={} sem anchors '/cursos/online/'. Encerrando varredura.", page);
+                stopReason = "NO_ANCHORS";
+                break;
+            }
 
+            int add = 0;
             for (Element a : anchors) {
                 String href = sanit(a.attr("href"));
                 String title = sanit(a.text());
-
                 if (href.isBlank()) continue;
 
-                // normaliza href -> absoluto
                 String abs = absUrl(base, href);
 
-                // Evita falsos positivos: exige "rota de detalhe"
-                // (algo como /cursos/online/<segmento1>/<slug> => 4+ segmentos)
                 if (!isDetailCoursePath(href)) continue;
 
-                // Caso o <a> tenha texto curto, tenta pegar título de ancestros previsíveis
                 if (title.length() < 5) {
-                    Element h2 = a.parents().select("h2").first();
                     Element h3 = a.parents().select("h3").first();
+                    Element h2 = a.parents().select("h2").first();
                     if (h3 != null && sanit(h3.text()).length() > 5) title = sanit(h3.text());
                     else if (h2 != null && sanit(h2.text()).length() > 5) title = sanit(h2.text());
                 }
-
                 if (title.isBlank()) continue;
 
-                if (seen.putIfAbsent(abs, title) == null) add++;
+                if (seen.putIfAbsent(abs, title) == null) {
+                    add++;
+                }
+                if (seen.size() >= itemCap) {
+                    stopReason = "ITEM_CAP";
+                    break;
+                }
             }
 
-            // logs para diagnóstico
-            String pageTitle = sanit(doc.title());
+            final String pageTitle = sanit(doc.title());
             log.info("FGV: page={} added={} totalSoFar={} (anchorsTot={}) title=\"{}\"",
                     page, add, seen.size(), anchorsTot, pageTitle);
 
-            // estratégia de parada: nenhuma novidade => encerra
-            if (add == 0 && page > startPage) break;
+            if ("ITEM_CAP".equals(stopReason)) {
+                log.warn("FGV: atingiu itemCap={} — interrompendo.", itemCap);
+                break;
+            }
 
-            // pequena pausa de polidez
-            sleep(220);
+            if (add == 0 && page > startPage) {
+                stopReason = "ADDED_ZERO";
+                break;
+            }
+
+            try {
+                Thread.sleep(PAGE_SLEEP_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                stopReason = "INTERRUPTED";
+                log.warn("FGV: loop interrompido por Thread.interrupt().");
+                break;
+            }
         }
 
-        // 4) monta saída
-        List<Course> out = new ArrayList<>(seen.size());
+        final List<Course> out = new ArrayList<>(seen.size());
         seen.forEach((href, title) -> out.add(new Course(
                 null, null,
                 sha256(title + "|" + href),
@@ -134,28 +169,30 @@ public class FgvScraperAdapter implements ScraperPort {
                 href,
                 "FGV",
                 mapArea(title),
-                true,           // página já é “Cursos Online » Gratuitos”
+                true,
                 null, null,
-                "", "",         // statusText / priceText
+                "", "",
                 null, null
         )));
-        log.info("FGV: total extraído={} (zeroBased=true, startPage={}, lastPage={})", out.size(), startPage, last);
+
+        final long tookMs = (System.nanoTime() - t0) / 1_000_000;
+        if (out.isEmpty()) {
+            log.warn("FGV: nenhum curso extraído. stopReason={} tookMs={}ms", stopReason, tookMs);
+        } else {
+            log.info("FGV: total extraído={} stopReason={} tookMs={}ms (zeroBased=true, startPage={}, lastPage={})",
+                    out.size(), stopReason, tookMs, startPage, last);
+        }
         return out;
     }
 
-    /* ===================== Helpers ===================== */
-
     private Document getDoc(String url) {
-        // 1) tenta via HttpFetch (seu util)
-        Document doc = null;
         try {
-            doc = HttpFetch.get(url, TIMEOUT_MS, 2, 400);
-        } catch (Throwable ignore) {
-            // segue para fallback
+            Document doc = HttpFetch.get(url, TIMEOUT_MS, FETCH_RETRIES, FETCH_BACKOFFMS);
+            if (doc != null) return doc;
+        } catch (Throwable t) {
+            log.warn("FGV: HttpFetch falhou url={} - {}", url, t.toString());
         }
-        if (doc != null) return doc;
 
-        // 2) fallback: Jsoup direto com UA de navegador e cabeçalhos
         try {
             return Jsoup.connect(url)
                     .userAgent(UA_BROWSER)
@@ -171,9 +208,9 @@ public class FgvScraperAdapter implements ScraperPort {
         }
     }
 
-    /** Varre paginação e pega o maior "page=" encontrado (zero-based). */
     private static int detectLastPage(Document doc) {
         int max = -1;
+        if (doc == null) return max;
         for (Element a : doc.select("ul.pagination a[href*=\"page=\"]")) {
             String h = a.attr("href");
             int idx = h.lastIndexOf("page=");
@@ -184,23 +221,21 @@ public class FgvScraperAdapter implements ScraperPort {
             try {
                 int p = Integer.parseInt(num.replaceAll("\\D+", ""));
                 max = Math.max(max, p);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) { /* segue */ }
         }
         return max;
     }
 
-    /** Aceita apenas caminhos com profundidade de detalhe, para evitar links de categoria/menu. */
     private static boolean isDetailCoursePath(String href) {
-        // exemplo válido: /cursos/online/curta-media-duracao-online/introducao-a-filosofia-50-horas
         if (href == null || href.isBlank()) return false;
         if (!href.startsWith("/cursos/online/")) return false;
-        // conta segmentos
         String[] parts = href.split("/");
-        // ["", "cursos", "online", "<segmento>", "<slug...>"] => >= 5
         return parts.length >= 5;
     }
 
-    private static String sanit(String s) { return s == null ? "" : s.trim(); }
+    private static String sanit(String s) {
+        return s == null ? "" : s.trim();
+    }
 
     private static String absUrl(String base, String href) {
         if (href == null || href.isBlank()) return "";
@@ -224,13 +259,9 @@ public class FgvScraperAdapter implements ScraperPort {
     private static String sha256(String s) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(md.digest(s.getBytes(StandardCharsets.UTF_8)));
+            return java.util.HexFormat.of().formatHex(md.digest(s.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
             return Integer.toHexString(s.hashCode());
         }
-    }
-
-    private static void sleep(long ms) {
-        try { Thread.sleep(ms); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 }
