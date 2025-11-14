@@ -57,7 +57,7 @@ public class SebraeScraperAdapter implements ScraperPort {
         final String base = normalizeBase(platform != null ? platform.baseUrl() : null);
         final int maxItems = Math.max(STEP, Math.min(Math.max(maxPages, 1), 50) * 60);
 
-        log.info("[Sebrae] início da coleta base={} maxItems={}", base, maxItems);
+        log.info("[Sebrae] início da coleta base={} maxItems={}", Optional.of(base), Optional.of(maxItems));
         if (platform == null) {
             log.warn("[Sebrae] Platform nula (usando base padrão).");
         }
@@ -109,7 +109,7 @@ public class SebraeScraperAdapter implements ScraperPort {
             if (cards.isEmpty()) {
                 cards = doc.select(".card a[href*=\"/sites/PortalSebrae/cursosonline/\"]");
                 if (cards.isEmpty()) {
-                    log.warn("[Sebrae] Nenhuma âncora de curso encontrada na resposta (qtd={}, url={})", pageQtd, url);
+                    log.warn("[Sebrae] Nenhuma âncora de curso encontrada na resposta (qtd={}, url={})", Optional.of(pageQtd), Optional.of(url));
                 }
             }
 
@@ -122,7 +122,7 @@ public class SebraeScraperAdapter implements ScraperPort {
             }
 
             log.info("[Sebrae] qtd={} reportedTotal={} added={} totalSoFar={} hasNext={} url={}",
-                    pageQtd, reportedTotal, added, hrefToTitle.size(), next, url);
+                    Optional.of(pageQtd), Optional.of(reportedTotal), Optional.of(added), Optional.of(hrefToTitle.size()) , Optional.of(next), url);
 
             if (added == 0) {
                 emptyStreak++;
@@ -142,7 +142,7 @@ public class SebraeScraperAdapter implements ScraperPort {
 
             if (hrefToTitle.size() >= maxItems) {
                 stopReason = "ITEM_CAP";
-                log.warn("[Sebrae] atingiu itemCap={} — interrompendo.", maxItems);
+                log.warn("[Sebrae] atingiu itemCap={} — interrompendo.", Optional.of(maxItems));
                 break;
             }
 
@@ -175,7 +175,7 @@ public class SebraeScraperAdapter implements ScraperPort {
 
         final long tookMs = (System.nanoTime() - t0) / 1_000_000;
         log.info("[Sebrae] total extracted={} (reported total={}) stopReason={} tookMs={}ms",
-                out.size(), reportedTotal, stopReason, tookMs);
+                Optional.of(out.size()), Optional.of(reportedTotal), Optional.of(stopReason), Optional.of(tookMs));
 
         return out;
     }

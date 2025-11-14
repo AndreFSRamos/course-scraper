@@ -1,3 +1,13 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /scraper
+  error:
+    include-message: always
+  tomcat:
+    relaxed-path-chars: "/,\\"
+    relaxed-query-chars: '|,{,},[,]'
+
 spring:
   application:
     name: cursos-scraper
@@ -14,6 +24,15 @@ spring:
       hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
+
+swagger:
+    server-url: {SWAGGER_SERVER_URL}
+
+springdoc:
+    swagger-ui:
+      path: /swagger-ui.html
+    api-docs:
+      path: /v3/api-docs
 
 app:
   timezone: America/Sao_Paulo

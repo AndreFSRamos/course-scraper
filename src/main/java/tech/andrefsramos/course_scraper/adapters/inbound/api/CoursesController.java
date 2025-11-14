@@ -1,5 +1,6 @@
 package tech.andrefsramos.course_scraper.adapters.inbound.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1")
+@Tag(name="02 - Cursos")
 public class CoursesController {
 
     private static final Logger log = LoggerFactory.getLogger(CoursesController.class);
