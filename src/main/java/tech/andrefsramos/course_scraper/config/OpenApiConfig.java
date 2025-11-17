@@ -4,6 +4,11 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springdoc.core.properties.SwaggerUiConfigProperties;
+import org.springdoc.core.properties.SwaggerUiOAuthProperties;
+import org.springdoc.core.providers.ObjectMapperProvider;
+import org.springdoc.webmvc.ui.SwaggerIndexTransformer;
+import org.springdoc.webmvc.ui.SwaggerWelcomeCommon;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -230,14 +235,15 @@ import java.util.List;
         )
 )
 public class OpenApiConfig {
-
-    @Value("${swagger.server-url}")
-    private String swaggerUrl;
-
+    
     @Bean
-    public OpenAPI customOpenAPI() {
-        Server server = new Server();
-        server.setUrl(swaggerUrl);
-        return new OpenAPI().servers(List.of(server));
+    public SwaggerIndexTransformer swaggerIndexTransformer(
+            SwaggerUiConfigProperties swaggerUiConfig,
+            SwaggerUiOAuthProperties swaggerUiOAuthProperties,
+            SwaggerWelcomeCommon swaggerWelcomeCommon,
+            ObjectMapperProvider objectMapperProvider
+    ) {
+
+        return new SwaggerCustomCssInjector(swaggerUiConfig, swaggerUiOAuthProperties, swaggerWelcomeCommon, objectMapperProvider);
     }
 }

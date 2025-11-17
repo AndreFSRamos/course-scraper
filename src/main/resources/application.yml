@@ -7,10 +7,16 @@ server:
   tomcat:
     relaxed-path-chars: "/,\\"
     relaxed-query-chars: '|,{,},[,]'
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: cursos-scraper
+  mvc:
+    static-path-pattern: /static/**
+  web:
+    resources:
+      static-locations: classpath:/scraper/static/
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
@@ -30,9 +36,18 @@ swagger:
 
 springdoc:
     swagger-ui:
-      path: /swagger-ui.html
+      enabled: true
+      path: swagger-ui.html
+      operations-sorter: method
+      tags-sorter: alpha
+
     api-docs:
-      path: /v3/api-docs
+      path: /api-docs
+      version: openapi_3_1
+
+swagger-ui-themes:
+  theme: dark
+
 
 app:
   timezone: America/Sao_Paulo

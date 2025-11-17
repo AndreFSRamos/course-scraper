@@ -1,5 +1,6 @@
 package tech.andrefsramos.course_scraper.adapters.inbound.api;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import tech.andrefsramos.course_scraper.core.application.CollectCoursesUseCase;
  * - Retornar status de sucesso ou erro conforme o resultado da operação.
  */
 @RestController
+@Hidden
 @RequestMapping("/admin")
 @Tag(name = "01 - Admin")
 public class AdminController {

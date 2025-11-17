@@ -1,0 +1,264 @@
+/* ===========================
+   🌙 Swagger UI Custom Dark Mode
+   =========================== */
+
+:root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #1f2733;
+
+    --text-primary: #e6edf3;
+    --text-secondary: #9ba4b5;
+
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+
+    --border-color: #30363d;
+    --code-bg: #161b22;
+}
+
+/* Background geral */
+.swagger-ui,
+.swagger-ui .wrapper,
+body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.swagger-ui .topbar .download-url-wrapper {
+    display: none;
+}
+
+.swagger-ui .topbar {
+    background-color: transparent;
+}
+
+.swagger-ui .info .title small pre {
+    color: #fff;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: transparent !important;
+}
+
+/* Títulos e fontes */
+.swagger-ui h1,
+.swagger-ui h2,
+.swagger-ui h3,
+.swagger-ui h4,
+.swagger-ui h5 {
+    color: var(--text-primary) !important;
+}
+
+.swagger-ui .info ul li,
+.swagger-ui .markdown ul li {
+    padding: 4px 0 !important;
+    line-height: 1.5 !important;
+}
+
+.swagger-ui .info ol li,
+.swagger-ui .markdown ol li {
+    padding: 4px 0 !important;
+    line-height: 1.5 !important;
+}
+
+/* ========================
+   LISTAS (Melhor espaçamento)
+   ======================== */
+.swagger-ui .info ol li,
+.swagger-ui .markdown ol li {
+    padding: 4px 0 !important;
+    line-height: 1.5 !important;
+}
+
+.swagger-ui .info ul li,
+.swagger-ui .markdown ul li {
+    padding: 4px 0 !important;
+    line-height: 1.5 !important;
+}
+
+/* ========================
+   BLOCO DE OPERAÇÕES
+   ======================== */
+.swagger-ui .opblock {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    margin-bottom: 20px !important;
+    border-radius: 8px !important;
+}
+
+/* Métodos */
+.opblock .opblock-summary-method {
+    border-radius: 4px !important;
+    padding: 4px 10px !important;
+}
+
+/* Corrige fundo colado */
+.swagger-ui .opblock-summary {
+    padding: 12px 20px !important;
+}
+
+/* ========================
+   TABELAS (Schemas, erros, responses)
+   ======================== */
+.swagger-ui table {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 6px !important;
+    color: var(--text-primary) !important;
+}
+
+.swagger-ui table thead tr th {
+    background: var(--bg-tertiary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 10px !important;
+    color: var(--text-primary) !important;
+}
+
+.swagger-ui table tbody tr td {
+    padding: 10px !important;
+    color: var(--text-primary) !important;
+}
+
+/* Descrição */
+.swagger-ui .info p,
+.swagger-ui .info li {
+    color: var(--text-secondary) !important;
+}
+
+/* Sidebar + Nav */
+.swagger-ui .opblock-tag-section .opblock-tag {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.swagger-ui .opblock-summary {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Divisor */
+.swagger-ui hr {
+    border-color: var(--border-color) !important;
+}
+
+/* Cards de operações */
+.swagger-ui .opblock {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Métodos coloridos (GET, POST, etc.) */
+.opblock .opblock-summary-method {
+    color: #fff !important;
+    border-radius: 4px;
+}
+
+.opblock-get .opblock-summary-method { background: #2c97de !important; }
+.opblock-post .opblock-summary-method { background: #3fa33f !important; }
+.opblock-put .opblock-summary-method { background: #d9a60e !important; }
+.opblock-delete .opblock-summary-method { background: #d93f3f !important; }
+
+/* Responses Table */
+.swagger-ui table {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.swagger-ui table thead tr th {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Inputs & selects */
+.swagger-ui .parameters input,
+.swagger-ui .parameters textarea,
+.swagger-ui .execute-wrapper input,
+.swagger-ui select {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Highlight code / JSON */
+.swagger-ui pre,
+.swagger-ui code {
+    background: var(--code-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Server URL */
+.swagger-ui .scheme-container {
+    background: transparent;
+}
+
+.swagger-ui .opblock .opblock-section-header {
+    background: transparent;
+}
+
+/* Botões */
+.swagger-ui .btn,
+.swagger-ui .opblock-control__btn {
+    background: var(--accent) !important;
+    border: none !important;
+    color: #fff !important;
+}
+
+.swagger-ui .btn:hover,
+.swagger-ui .opblock-control__btn:hover {
+    background: var(--accent-hover) !important;
+}
+
+/* Try it out */
+.swagger-ui .try-out__btn {
+    background: var(--accent) !important;
+    color: #fff !important;
+}
+
+.swagger-ui .try-out__btn:hover {
+    background: var(--accent-hover) !important;
+}
+
+/* Autorization modal */
+.swagger-ui .modal-ux {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.swagger-ui .modal-ux-header h3,
+.swagger-ui .modal-ux-content h4,
+.swagger-ui .modal-ux p {
+    color: var(--text-primary) !important;
+}
+
+.swagger-ui .json-schema-2020-12-accordion {
+    background-color: transparent;
+}
+
+.swagger-ui .json-schema-2020-12__title {
+    color: var(--text-primary);
+}
+
+.swagger-ui .json-schema-2020-12-expand-deep-button {
+    color: var(--text-primary);
+    background-color: transparent;
+}
+
+.swagger-ui .opblock .opblock-summary-operation-id, .swagger-ui .opblock .opblock-summary-path, .swagger-ui .opblock .opblock-summary-path__deprecated {
+    color: var(--text-primary);
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+    color: var(--text-primary);
+}
+
+.swagger-ui .opblock-description-wrapper p, .swagger-ui .opblock-external-docs-wrapper p, .swagger-ui .opblock-title_normal p {
+    color: var(--text-primary);
+}
+
+.swagger-ui .opblock-description-wrapper, .swagger-ui .opblock-external-docs-wrapper, .swagger-ui .opblock-title_normal {
+    color: var(--text-primary);
+}
