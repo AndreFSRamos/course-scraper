@@ -3,6 +3,7 @@ package tech.andrefsramos.course_scraper.adapters.outbound.scrapers;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import tech.andrefsramos.course_scraper.adapters.outbound.http.HttpSession;
 import tech.andrefsramos.course_scraper.core.domain.Course;
@@ -44,6 +45,12 @@ public class SebraeScraperAdapter implements ScraperPort {
     private static final long BACKOFF_MS      = 800;
     private static final long SLEEP_BETWEEN   = 320;
     private static final int NULL_DOC_STREAK_CAP = 2;
+
+    @Cacheable(cacheNames = "sebraePageHtml", key = "#root.target.normalizeCacheKey(#url)")
+    public Document fetchPageHtml(HttpSession ses, String url) {
+        log.debug("[Sebrae] Fetching HTML real: {}", url);
+        return ses.get(url);
+    }
 
     @Override
     public boolean supports(Platform p) {
@@ -88,7 +95,7 @@ public class SebraeScraperAdapter implements ScraperPort {
                     + "&filters=" + filters
                     + "&_cb=" + System.nanoTime();
 
-            final Document doc = ses.get(url);
+            final Document doc = fetchPageHtml(ses, url);
             if (doc == null) {
                 log.warn("[Sebrae] Null document URL={}", url);
                 emptyStreak++;
@@ -178,6 +185,11 @@ public class SebraeScraperAdapter implements ScraperPort {
                 Optional.of(out.size()), Optional.of(reportedTotal), Optional.of(stopReason), Optional.of(tookMs));
 
         return out;
+    }
+
+    private String normalizeCacheKey(String url) {
+        int idx = url.indexOf("&_cb=");
+        return (idx > 0) ? url.substring(0, idx) : url;
     }
 
     private static int parseInt(Element hidden, int fb) {

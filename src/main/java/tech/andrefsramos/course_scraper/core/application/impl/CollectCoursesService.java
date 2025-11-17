@@ -35,6 +35,7 @@ public class CollectCoursesService implements CollectCoursesUseCase {
     private final List<String> enabledPlatformNames;
     private final int maxPagesPerRun;
     private final PlatformRepository platformRepository;
+    private final CourseCacheService courseCacheService;
 
     public CollectCoursesService(
             List<ScraperPort> scrapers,
@@ -42,7 +43,8 @@ public class CollectCoursesService implements CollectCoursesUseCase {
             NotifyNewCoursesUseCase notifyNew,
             List<String> enabledPlatformNames,
             int maxPagesPerRun,
-            PlatformRepository platformRepository
+            PlatformRepository platformRepository,
+            CourseCacheService courseCacheService
     ) {
         this.scrapers = scrapers != null ? scrapers : List.of();
         this.detectChanges = detectChanges;
@@ -50,6 +52,7 @@ public class CollectCoursesService implements CollectCoursesUseCase {
         this.enabledPlatformNames = enabledPlatformNames != null ? enabledPlatformNames : List.of();
         this.maxPagesPerRun = Math.max(maxPagesPerRun, 1);
         this.platformRepository = platformRepository;
+        this.courseCacheService = courseCacheService;
     }
 
     @Override
@@ -106,6 +109,33 @@ public class CollectCoursesService implements CollectCoursesUseCase {
 
         final long tEnrich0 = System.nanoTime();
         List<Course> enriched = batch.stream().filter(Objects::nonNull).map(c -> withPlatformId(c, pid)).toList();
+
+        final long tCache0 = System.nanoTime();
+        List<Course> filtered = new ArrayList<>();
+
+        for (Course c : enriched) {
+            if (c == null || c.externalIdHash() == null) continue;
+
+            if (courseCacheService.isFirstTimeSeen(c.externalIdHash())) {
+                // Marca como visto
+                courseCacheService.registerHash(c.externalIdHash(), c.provider());
+                filtered.add(c);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("[Collect] HASH já conhecido (ignorado) provider={} hash={} title={}",
+                            c.provider(), c.externalIdHash(), c.title());
+                }
+            }
+        }
+
+        final long tCache1 = System.nanoTime();
+        log.info("[Collect] CachePersistido filtrou {} → {} ({} ms)",
+                enriched.size(), filtered.size(), durMs(tCache0, tCache1));
+
+        if (filtered.isEmpty()) {
+            log.info("[Collect] Nenhum curso novo encontrado após filtro de cache persistido.");
+            return;
+        }
         final long tEnrich1 = System.nanoTime();
         if (log.isDebugEnabled()) {
             log.debug("[Collect] Enriquecimento concluído platform={}, count={} ({} ms)",
@@ -115,7 +145,7 @@ public class CollectCoursesService implements CollectCoursesUseCase {
         final long tDiff0 = System.nanoTime();
         List<Course> newOrUpdated;
         try {
-            newOrUpdated = detectChanges.computeNewOrUpdated(enriched);
+            newOrUpdated = detectChanges.computeNewOrUpdated(filtered);
         } catch (Exception e) {
             log.error("[Collect] Erro no DetectChanges para platform={}. Causa={}", pname, e.getMessage(), e);
             return;

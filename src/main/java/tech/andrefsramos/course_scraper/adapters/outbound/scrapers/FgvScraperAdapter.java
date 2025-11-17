@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import tech.andrefsramos.course_scraper.adapters.outbound.http.HttpFetch;
 import tech.andrefsramos.course_scraper.core.domain.Course;
@@ -49,6 +50,12 @@ public class FgvScraperAdapter implements ScraperPort {
     private static final long PAGE_SLEEP_MS = 220;
     private static final String UA_BROWSER =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+    @Cacheable(cacheNames = "fgvPageHtml")
+    public Document fetchPageHtml(String url) {
+        log.debug("FGV: Fetching HTML real: {}", url);
+        return getDocReal(url);
+    }
 
     @Override
     public boolean supports(Platform p) {
@@ -185,7 +192,7 @@ public class FgvScraperAdapter implements ScraperPort {
         return out;
     }
 
-    private Document getDoc(String url) {
+    private Document getDocReal(String url) {
         try {
             Document doc = HttpFetch.get(url, TIMEOUT_MS, FETCH_RETRIES, FETCH_BACKOFFMS);
             if (doc != null) return doc;
@@ -206,6 +213,10 @@ public class FgvScraperAdapter implements ScraperPort {
             log.warn("FGV: fallback Jsoup falhou url={} - {}", url, e.toString());
             return null;
         }
+    }
+
+    private Document getDoc(String url) {
+        return fetchPageHtml(url);
     }
 
     private static int detectLastPage(Document doc) {

@@ -168,7 +168,8 @@ public class AppConfig {
             @Value("${app.scrape.connectors.evg.maxPagesPerRun:100}") int evgMax,
             @Value("${app.scrape.connectors.fgv.maxPagesPerRun:100}") int fgvMax,
             @Value("${app.scrape.connectors.sebrae.maxPagesPerRun:100}") int sebraeMax,
-            PlatformRepository platformRepository
+            PlatformRepository platformRepository,
+            CourseCacheService courseCacheService
     ) {
         final long t0 = System.nanoTime();
         try {
@@ -198,7 +199,8 @@ public class AppConfig {
                     notifyNewCoursesUseCase,
                     enabled,
                     maxPages,
-                    platformRepository
+                    platformRepository,
+                    courseCacheService
             );
 
             long tookMs = (System.nanoTime() - t0) / 1_000_000;

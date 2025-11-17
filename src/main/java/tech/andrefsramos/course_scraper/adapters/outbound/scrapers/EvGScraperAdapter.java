@@ -3,6 +3,7 @@ package tech.andrefsramos.course_scraper.adapters.outbound.scrapers;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import tech.andrefsramos.course_scraper.adapters.outbound.http.HttpFetch;
 import tech.andrefsramos.course_scraper.core.domain.Course;
@@ -49,6 +50,11 @@ public class EvGScraperAdapter implements ScraperPort {
 
     private static final String CARD_SELECTORS = ".card, .resultado-cursos .card, article.card, a[href*=\"/curso/\"]";
 
+    @Cacheable(cacheNames = "evgPageHtml")
+    public Document fetchPageHtml(String url) {
+        return HttpFetch.get(url, DEFAULT_TIMEOUT_MS, DEFAULT_RETRIES, DEFAULT_BACKOFF_MS);
+    }
+
     @Override
     public boolean supports(Platform p) {
         return p != null && "evg".equalsIgnoreCase(p.name());
@@ -71,7 +77,7 @@ public class EvGScraperAdapter implements ScraperPort {
         final Map<String, String> seen = new LinkedHashMap<>();
         int startPage = 1;
 
-        Document first = HttpFetch.get(base + path + startPage, DEFAULT_TIMEOUT_MS, DEFAULT_RETRIES, DEFAULT_BACKOFF_MS);
+        Document first = fetchPageHtml(base + path + startPage);
         boolean cardOnFirst = hasCards(first);
         if (!cardOnFirst) {
             log.warn("EVG: nenhum card em page=1 — tentando paginação 0-based.");
@@ -96,8 +102,9 @@ public class EvGScraperAdapter implements ScraperPort {
         String stopReason = "OK";
         for (int page = startPage; page <= last; page++) {
             final String url = base + path + page;
-            final Document doc = (page == startPage) ? first
-                    : HttpFetch.get(url, DEFAULT_TIMEOUT_MS, DEFAULT_RETRIES, DEFAULT_BACKOFF_MS);
+            final Document doc = (page == startPage)
+                    ? first
+                    : fetchPageHtml(url);
 
             if (doc == null) {
                 log.warn("EVG: doc nulo page={} url={}. Encerrando.", page, url);
