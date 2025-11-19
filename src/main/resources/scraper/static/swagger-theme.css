@@ -262,3 +262,39 @@ body {
 .swagger-ui .opblock-description-wrapper, .swagger-ui .opblock-external-docs-wrapper, .swagger-ui .opblock-title_normal {
     color: var(--text-primary);
 }
+
+.swagger-ui .scheme-container .schemes>.schemes-server-container {
+    display: none;
+}
+
+.swagger-ui .opblock-tag small {
+    color: var(--text-primary)
+}
+
+.swagger-ui a.nostyle, .swagger-ui a.nostyle:visited {
+    display: none;
+}
+
+.swagger-ui .opblock {
+    margin-bottom: 0px !important;
+    border: none;
+}
+
+.swagger-ui .scheme-container {
+    margin: 0px;
+    padding: 0px;
+}
+
+.swagger-ui .opblock-tag {
+    margin: 10px 0 0px;
+    border-bottom: none;
+}
+
+.swagger-ui svg:not(:root) {
+    overflow: hidden;
+    fill: var(--text-primary);
+}
+
+.swagger-ui .expand-methods, .swagger-ui .expand-operation {
+    display: none;
+}
