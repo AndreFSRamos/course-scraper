@@ -2,18 +2,17 @@ package tech.andrefsramos.course_scraper.config;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
 import org.springdoc.core.properties.SwaggerUiOAuthProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
 import org.springdoc.webmvc.ui.SwaggerIndexTransformer;
 import org.springdoc.webmvc.ui.SwaggerWelcomeCommon;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 @OpenAPIDefinition(
@@ -21,189 +20,157 @@ import java.util.List;
                 title = "Scraper - API para consulta de cursos onlines gratuitos",
                 version = "v1",
                 description = """
+                                ---
+                                
                                 ## 🎯 Visão Geral da API Course Scraper
-
-                                Bem-vindo à documentação oficial da API **Scraper**, um serviço voltado à **coleta, consolidação e exposição de cursos gratuitos e online** a partir de fontes públicas.
-
-                                Atualmente, a API agrega cursos de:
-                                - **EVG** — Escola Virtual de Governo;
-                                - **FGV Educação Executiva** — cursos gratuitos online;
-                                - **Sebrae** — cursos online gratuitos.
-
-                                A proposta é oferecer um **catálogo unificado**, simples de consultar e fácil de integrar em outros sistemas, dashboards ou rotinas de estudo.
-
+                                
+                                Bem-vindo à documentação oficial da API **Scraper**, um serviço inteligente que coleta, organiza e disponibiliza cursos **gratuitos e online** de fontes públicas, mantendo tudo atualizado automaticamente.
+                                
+                                Atualmente, a API integra:
+                                - **EVG** — Escola Virtual de Governo  
+                                - **FGV Educação Executiva** — cursos gratuitos online  
+                                - **Sebrae** — cursos online gratuitos  
+                                
+                                A proposta é reunir tudo em um **catálogo centralizado, fácil de consultar**, acessível via HTTP e pronto para integrações com aplicativos, dashboards e sistemas de aprendizado automatizados.
+                                
                                 > ⚠️ **Aviso importante**  
-                                > O Course Scraper **não é um serviço oficial** de nenhuma das instituições listadas e **não possui vínculo** com elas.  
-                                > Todo o conteúdo é coletado por _web scraping_ em páginas públicas.
-
+                                > Este serviço **não tem vínculo** com as instituições de origem.  
+                                > Ele apenas organiza informações públicas, obtidas via scraping.
+                                
                                 ---
-
-                                ## ✅ O que você encontra nesta documentação
-
-                                Aqui você terá acesso a:
-                                - Endpoints para:
-                                  - **Disparar coletas manuais** por plataforma (`/admin/collect/{platform}`);
-                                  - **Listar cursos mais recentes** com filtros (`/api/v1/courses`);
-                                - Exemplos de uso com query parameters;
-                                - Convenções de campos e formatos (especialmente datas);
-                                - Códigos de resposta HTTP mais comuns.
-
-                                Use a busca da própria UI do Swagger para localizar endpoints e parâmetros rapidamente.
-
+                                
+                                ## ⚙️ Como funciona a API — visão simples e prática
+                                                         
+                                ### **Coleta inteligente com uso de cache**
+                                O sistema coleta cursos periodicamente (via agendamentos internos) ou manualmente (via endpoint `/admin/collect/{platform}`).
+                                
+                                Para evitar sobrecargas nas plataformas de origem e garantir performance, existe um **mecanismo interno de cache**:
+                                - Cada curso coletado recebe um hash único;
+                                - Se uma plataforma ainda não publicou novos cursos, o sistema **ignora a coleta repetida**;
+                                - Isso reduz custo computacional e elimina duplicidade de registros;
+                                - O banco mantém apenas cursos válidos e atualizados.
+                                
+                                Resultado: **consultas mais rápidas, menos acessos desnecessários às páginas de origem e economia de recursos**.
+                                
                                 ---
-
-                                ## 💡 O que a API faz
-
-                                A API Course Scraper:
-
-                                - **Coleta periodicamente** cursos gratuitos e online nas plataformas suportadas;
-                                - **Normaliza e persiste** os dados em um banco relacional;
-                                - **Evita duplicidades** através de um hash de identificação externa;
-                                - **Disponibiliza consulta HTTP** aos cursos mais recentes, com filtros por:
-                                  - `platform` — nome da plataforma (`evg`, `fgv`, `sebrae`);
-                                  - `area` — área temática (ex.: `Tecnologia`, `Dados & IA`, etc.);
-                                  - `free` — flag de cursos gratuitos (`true`/`false`);
-                                  - `since` — apenas cursos atualizados/criados a partir de uma determinada data/hora;
-                                  - `page` e `size` — paginação.
-
-                                Opcionalmente, o backend pode enviar **notificações de novos cursos** para canais de:
-                                - **Telegram** (via bot);
-                                - **Discord** (via webhook).
-
+                                
+                                ## 🔐 Autenticação & Segurança
+                                
+                                A API agora possui um módulo completo de **autenticação JWT**, utilizado para proteger rotas administrativas.
+                                
+                                ### Endpoints públicos (não exigem login)
+                                - `GET /api/v1/courses`  
+                                  (listar cursos, aplicar filtros, consultas ilimitadas)
+                                
+                                ### Endpoints protegidos (ADMIN)
+                                - `POST /admin/collect/{platform}`  
+                                  (forçar coletas manuais)
+                                
                                 ---
-
-                                ## 🚫 O que a API *não* faz
-
-                                - Não realiza cadastro nem autenticação de usuários finais;
-                                - Não paga, matricula ou inscreve o usuário em nenhum curso;
-                                - Não garante disponibilidade, atualização ou permanência dos cursos nas plataformas de origem;
-                                - Não efetua qualquer tipo de integração oficial com os sistemas das instituições.
-
-                                Ela atua apenas como um **catálogo agregador de cursos gratuitos e públicos**.
-
-                                ---
-
-                                ## 🔌 Formato e convenções
-
-                                - Protocolo: **HTTP/HTTPS** (recomendado usar HTTPS em produção);
-                                - Formato de dados: **JSON** (`Content-Type: application/json`);
-                                - Charset: **UTF-8**.
-
-                                ### Datas e horários
-
-                                Alguns parâmetros e campos utilizam formato **ISO8601**.
-
-                                | Tipo de campo | Formato | Exemplo |
-                                |---------------|---------|---------|
-                                | `since` (query param) | `Instant` em ISO8601 | `2025-01-01T00:00:00Z` |
-
-                                Se o parâmetro `since` não for enviado, a API retornará os cursos mais recentes conforme ordenação interna, sem corte temporal explícito.
-
-                                ---
-
-                                ## 📡 Endpoints principais
-
-                                ### 1) Coleta manual por plataforma
-
-                                `POST /admin/collect/{platform}`
-
-                                - Dispara a coleta **manual** para uma plataforma específica;
-                                - Valores esperados em `{platform}`:
-                                  - `evg`
-                                  - `fgv`
-                                  - `sebrae`
-                                - Uso típico: operações internas, jobs manuais ou testes pontuais.
-
-                                ### 2) Consulta de cursos
-
-                                `GET /api/v1/courses`
-
-                                Lista cursos mais recentes com filtros opcionais:
-
-                                - `platform` *(opcional)* — filtra por plataforma (`evg`, `fgv`, `sebrae`);
-                                - `area` *(opcional)* — filtra por área temática (ex.: `Tecnologia`);
-                                - `free` *(opcional, padrão = `true`)* — se `true`, retorna apenas cursos gratuitos;
-                                - `since` *(opcional)* — filtra cursos a partir de um `Instant` ISO8601;
-                                - `page` *(opcional, padrão = `0`)* — página de resultados;
-                                - `size` *(opcional, padrão = `20`)* — quantidade de itens por página.
-
-                                **Exemplo de requisição:**
-
-                                ```http
-                                GET /api/v1/courses?platform=fgv&area=Tecnologia&free=true&page=0&size=20
-                                ```
-
-                                **Resposta (exemplo simplificado):**
-
+                                
+                                ## 🔑 Como funciona o login
+                                
+                                Quando o sistema inicia pela primeira vez, ele cria dois usuários padrão:
+                                
+                                | Usuário | Papel | Uso |
+                                |--------|--------|------|
+                                | `admin` | ADMIN | Acesso total aos endpoints administrativos |
+                                | `admin.collector` | COLLECTOR | Acesso aos fluxos internos de coleta |
+                                
+                                Essas contas são criadas automaticamente na tabela `users`.
+                                
+                                ### 📌 **Passo 1 — Login inicial**
+                                Envie:
+                                
                                 ```json
-                                [
-                                  {
-                                    "id": 123,
-                                    "platformId": 2,
-                                    "externalIdHash": "....",
-                                    "title": "Introdução à Ciência de Dados",
-                                    "url": "https://...",
-                                    "provider": "FGV",
-                                    "area": "Tecnologia",
-                                    "freeFlag": true,
-                                    "startDate": null,
-                                    "endDate": null,
-                                    "statusText": "Online (EAD)",
-                                    "priceText": "",
-                                    "createdAt": "2025-01-10T12:00:00Z",
-                                    "updatedAt": "2025-01-10T12:00:00Z"
-                                  }
-                                ]
+                                //POST /auth/login
+                                {
+                                  "username": "admin",
+                                  "password": "admin"
+                                }
                                 ```
-
+                                
+                                A resposta será:
+                                
+                                ```json
+                                {
+                                  "token": "Bearer eyJhbGciOiJIUzI1NiJ9..."
+                                }
+                                ```
+                                
+                                Você deve usar este token nos endpoints protegidos:
+                                
+                                ### 🔁 Troca obrigatória da senha
+                                
+                                Por segurança, ao fazer login pela primeira vez com o usuário admin, você deve alterar a senha padrão:
+                                
+                                ```json
+                                //PUT /auth/password
+                                {
+                                  "currentPassword": "admin",
+                                  "newPassword": "NovaSenhaSuperSegura123"
+                                }
+                                ```
+                                
+                                A partir desse momento:
+                                
+                                o login passa a exigir a nova senha,
+                                
+                                e o token futuro será gerado com as credenciais atualizadas.
+                                
                                 ---
-
-                                ## 🧪 Como usar na prática
-
-                                1. Faça o deploy do serviço (container ou execução local do Spring Boot);
-                                2. Acesse o Swagger UI (ex.: `/swagger-ui.html` ou `/swagger-ui/index.html`);
-                                3. Navegue até:
-                                   - **`/api/v1/courses`** para listar cursos;
-                                   - **`/admin/collect/{platform}`** para disparar coletas manuais;
-                                4. Ajuste parâmetros de consulta conforme sua necessidade (por exemplo, filtrar por área ou plataforma);
-                                5. Utilize a API em scripts, jobs ou integrações para alimentar:
-                                   - dashboards;
-                                   - bots de recomendação;
-                                   - notificadores personalizados.
-
+                                
+                                ## 🗂️ O que você pode fazer com a API
+                                ### 1) Consultar cursos
+                                Use o endpoint:
+                                
+                                 - `GET /api/v1/courses`
+                                
+                                Com filtros opcionais:
+                                
+                                 - `platform` — evg, fgv, sebrae
+                                
+                                 - `area` — área temática
+                                
+                                 - `free` — cursos gratuitos
+                                
+                                 - `since` — retornar somente cursos recentes
+                                
+                                 - `page` & `size` — paginação
+                                
+                                ### 2) Forçar coleta manual
+                                Apenas administradores podem usar:
+                                
+                                 - `POST /admin/collect/{platform}`
+                                
+                                Use para:
+                                
+                                 - Testes de desenvolvimento
+                                 - Reprocessamento manual
+                                 - Execução fora da rotina automática
+                                
                                 ---
-
-                                ## 🔒 Segurança e boas práticas
-
-                                - Em produção, recomenda-se expor a API **apenas via HTTPS**;
-                                - O endpoint `/admin/collect/{platform}` é voltado a uso interno:
-                                  - proteja-o via firewall, autenticação ou VPN;
-                                  - evite deixá-lo aberto em ambientes públicos;
-                                - Respeite as políticas de uso das plataformas de origem (EVG, FGV, Sebrae), incluindo:
-                                  - limites razoáveis de requisição;
-                                  - horários de coleta;
-                                  - atualização de robôs/scrapers em caso de mudanças estruturais.
-
+                                
+                                ## 🧪 Como começar — passo a passo
+                                 - Inicie a aplicação
+                                
+                                 - Realize o login inicial com **admin/admin**
+                                 - Troque a senha imediatamente
+                                 - Consulte cursos usando `/api/v1/courses`
+                                 - Use `/admin/collect/{platform}` para forçar coletar novamente
+                                 - Utilize o catálogo em bots, dashboards ou sistemas externos
+                                
                                 ---
-
-                                ## 🛑 Tratamento de erros (visão geral)
-
-                                A API utiliza códigos HTTP padrões. Alguns exemplos relevantes:
-
-                                | Código | Significado                                                |
-                                |--------|------------------------------------------------------------|
-                                | 200    | Requisição bem-sucedida (lista de cursos retornada).       |
-                                | 204    | Sem conteúdo (nenhum curso para os filtros informados).    |
-                                | 400    | Parâmetros inválidos ou formato incorreto em `since`.      |
-                                | 404    | Endpoint inexistente.                                      |
-                                | 429    | Limite de requisições excedido (se houver rate limit).     |
-                                | 500    | Erro interno ao executar coleta ou consulta de dados.      |
-
-                                Caso encontre um erro recorrente, recomenda-se registrar:
-                                - endpoint acessado;
-                                - parâmetros enviados;
-                                - horário aproximado (com timezone);
-                                - payload de resposta (quando houver).
+                                
+                                ### 📌 Tratamento de erros resumido
+                                | **Código** | **Significado** |
+                                |--------|-------------|
+                                | **200** |	Sucesso |
+                                | **204** |	Sem resultados |
+                                | **400** | Parâmetros inválidos |
+                                | **401** | Token ausente ou credenciais incorretas |
+                                | **403** | Usuário sem permissão |
+                                | **500** | Erro interno ao coletar ou buscar cursos |
 
                                 ---
 
@@ -228,13 +195,31 @@ import java.util.List;
                                 - 💻 **Repositório GitHub:** [https://github.com/AndreFSRamos/course-scraper](https://github.com/AndreFSRamos/course-scraper)  
                                 - ✉️ **E-mail:** [dev.andreramos@andrefsramos.tech](mailto:dev.andreramos@andrefsramos.tech)
 
-                                ---
-
                                 🧠 *Use esta API como base para construir experiências melhores de descoberta de cursos gratuitos — dashboards, notificadores e ferramentas de apoio ao aprendizado.*
+                                
+                                ---
+                                
+                                ## 🧩Endpoints
+                                
                                 """
         )
 )
 public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",
+                                new SecurityScheme()
+                                        .name("bearerAuth")
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                        )
+                )
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
+    }
     
     @Bean
     public SwaggerIndexTransformer swaggerIndexTransformer(

@@ -1,112 +1,187 @@
-# 🧠 Course Scraper
+# 🧠 Course Scraper — Sistema de Coleta, Cacheamento e Notificação de Cursos Gratuitos
 
-**Course Scraper** é uma aplicação desenvolvida em **Java 17 com Spring Boot**, cujo objetivo é **coletar, armazenar e notificar automaticamente cursos gratuitos e online** disponibilizados por plataformas públicas de ensino.  
-O projeto adota uma arquitetura **Hexagonal (Ports and Adapters)**, garantindo separação clara entre regras de negócio, infraestrutura e interfaces externas, facilitando manutenção, escalabilidade e testes.
+**Course Scraper** é uma aplicação desenvolvida em **Java 17 + Spring Boot 3**, projetada para coletar, armazenar, cachear e notificar automaticamente cursos gratuitos e online disponibilizados por plataformas públicas de ensino.
+
+A arquitetura segue o padrão **Hexagonal (Ports & Adapters)**, garantindo separação clara entre camadas, extensibilidade, facilidade de manutenção e testabilidade.
+
+---
 
 ## 🎯 Propósito do Projeto
 
-O sistema automatiza a **busca, análise e divulgação de novos cursos** em sites institucionais, atualmente com suporte a:
+O sistema automatiza:
 
-- **EV.G** (Escola Virtual de Governo)  
-- **FGV Educação Executiva**  
-- **Sebrae Cursos Online**
+1. Coleta periódica ou manual de cursos via scraping
+2. Normalização e padronização dos dados
+3. Identificação de novos cursos por hash
+4. Persistência em banco PostgreSQL
+5. Cacheamento inteligente para evitar duplicidades
+6. Notificação automática em:
+  - Discord
+  - Telegram
+7. Exposição de API pública para consumo externo
 
-O **Course Scraper** realiza:
-1. **Coleta periódica** de cursos via _web scraping_ (com uso de `Jsoup`);
-2. **Identificação de novos cursos** ou atualizações (comparando hashes);
-3. **Persistência dos dados** em banco relacional via JPA/Hibernate;
-4. **Notificações automáticas** via **Discord** e **Telegram**.
+Plataformas atualmente suportadas:
 
-## 🧩 Arquitetura e Estrutura de Pastas
+- EV.G – Escola Virtual de Governo
+- FGV – Fundação Getúlio Vargas
+- Sebrae – Cursos Online Gratuitos
 
-O projeto segue o padrão **Clean Architecture**, isolando a lógica de negócio do código de infraestrutura.
+---
 
+## 🧩 Arquitetura Hexagonal
+
+core/
+├── domain/ # Entidades e regras de negócio
+├── ports/ # Interfaces (contracts)
+└── application/ # Casos de uso (orquestração)
+adapters/
+├── inbound/ # Controllers, Schedulers, Jobs
+└── outbound/ # Scrapers, Repositórios, Notificações, Cache, HTTP
+
+yaml
+Copiar código
+
+Benefícios:
+
+- Domínio isolado
+- Infraestrutura substituível
+- Facilidade para adicionar novas plataformas
+- Testes independentes
+
+---
+
+## 📦 Estrutura de Pastas
 ```text
 course-scraper/
 │
 ├── src/main/java/tech/andrefsramos/course_scraper/
-│   ├── adapters/
-│   │   ├── inbound/                       # Interfaces de entrada (API REST, Jobs, agendadores)
-│   │   │   ├── api/                       # Controllers REST (AdminController, CoursesController)
-│   │   │   ├── jobs/                      # Tarefas agendadas (PendingNotifierJob)
-│   │   │   └── scheduler/                 # Agendadores (CollectScheduler)
-│   │   │
-│   │   ├── outbound/                      # Interfaces de saída (infraestrutura)
-│   │   │   ├── http/                      # Conexões HTTP e sessões (HttpFetch, HttpSession)
-│   │   │   ├── notify/                    # Envio de notificações (Discord, Telegram)
-│   │   │   ├── persistence/               # Repositórios JPA (entities e impls)
-│   │   │   └── scrapers/                  # Scrapers de cada plataforma (EVG, FGV, Sebrae)
-│   │   │
-│   │   └── config/                        # Configurações Spring (Beans e Scheduling)
-│   │
-│   └── core/                              # Camada de domínio (regras de negócio e use cases)
-│       ├── application/                   # Casos de uso (interfaces + implementações)
-│       ├── domain/                        # Entidades e políticas de negócio
-│       └── ports/                         # Contratos de entrada/saída (interfaces dos adapters)
+│ ├── adapters/
+│ │ ├── inbound/
+│ │ │ ├── api/
+│ │ │ ├── jobs/
+│ │ │ └── scheduler/
+│ │ ├── outbound/
+│ │ │ ├── http/
+│ │ │ ├── notify/
+│ │ │ ├── persistence/
+│ │ │ ├── scrapers/
+│ │ │ └── cache/
+│ │ └── config/
+│ └── core/
+│ ├── application/
+│ ├── domain/
+│ └── ports/
 │
-├── src/main/resources/
-│   ├── application.yml                    # Configurações de ambiente
-│   └── db.migration/                      # Scripts Flyway para inicialização do banco
-│
-└── pom.xml                                # Configuração Maven (dependências e plugins)
+└── src/main/resources/db/migration/ # Scripts Flyway
 ```
+---
 
 ## ⚙️ Tecnologias Utilizadas
 
 | Categoria | Tecnologias |
-|------------|-------------|
-| Linguagem | **Java 17** |
-| Framework | **Spring Boot 3.x** |
-| ORM / Banco | **JPA / Hibernate**, com **Flyway** para versionamento |
-| Scraping | **Jsoup** |
-| Logging | **SLF4J + Logback** |
-| Build | **Maven Wrapper (mvnw)** |
-| Notificações | **Discord Webhook**, **Telegram Bot API** |
-| Agendamentos | **Spring Scheduler (@Scheduled)** |
+|----------|-------------|
+| Linguagem | Java 17 |
+| Framework | Spring Boot 3.x |
+| ORM | JPA + Hibernate |
+| Banco | PostgreSQL |
+| Migração | Flyway |
+| Scraping | Jsoup |
+| Notificações | Telegram Bot API, Discord Webhook |
+| Build | Maven Wrapper |
+| Logs | SLF4J + Logback |
 
-## 🧠 Como o Sistema Funciona
+---
 
-### 1️⃣ Coleta de Cursos (`CollectCoursesUseCase`)
-- Cada scraper (`EvGScraperAdapter`, `FgvScraperAdapter`, `SebraeScraperAdapter`) acessa a respectiva plataforma e extrai os cursos.
-- Os dados são normalizados e salvos no banco via `CourseRepository`.
+## 🔐 Autenticação JWT
 
-### 2️⃣ Detecção de Novos Cursos (`DetectChangesUseCase`)
-- Cada curso é identificado por um **hash SHA-256** (baseado no título e URL).  
-- O sistema compara o hash com os registros existentes, detectando **novos cursos ou alterações relevantes**.
+A aplicação implementa autenticação via **JWT**, utilizada para proteger rotas administrativas.
 
-### 3️⃣ Notificações (`NotifyNewCoursesUseCase`)
-- Novos cursos são agrupados em lotes e enviados para:
-  - Discord (via `DiscordNotificationAdapter`);
-  - Telegram (via `TelegramNotificationAdapter`);
-- Caso a notificação exceda o limite de mensagens, um resumo é enviado.
+### Usuários criados automaticamente
 
-### 4️⃣ Pendências (`PendingNotifierJob`)
-- Caso alguma notificação falhe, o sistema mantém o registro como "pendente";
-- Jobs periódicos (`@Scheduled`) verificam e reenviam notificações automaticamente.
+| Usuário | Papel | Senha inicial |
+|--------|--------|----------------|
+| admin | ADMIN | admin |
+| admin.collector | COLLECTOR | admin |
 
-## 🧩 Descrição das Camadas
+Após o primeiro login, é obrigatória a troca da senha:
 
-| Camada | Função |
-|--------|--------|
-| **core.domain** | Define as **entidades centrais** (Course, Platform) e **regras de negócio** (CourseChangePolicy). |
-| **core.application** | Contém os **casos de uso** (use cases) e suas implementações (services). Essa camada orquestra o fluxo entre domínio e infraestrutura. |
-| **core.ports** | Define **interfaces de comunicação** entre o domínio e os adapters externos (repositórios, scrapers, notificadores). |
-| **adapters.inbound** | Entradas do sistema — controladores REST, agendadores e jobs que disparam os casos de uso. |
-| **adapters.outbound** | Saídas do sistema — implementações concretas dos ports (repositórios JPA, scrapers, notificadores, etc). |
-| **config** | Configurações Spring Boot (injeção de beans, scheduling e dependências). |
+```bash
+  PUT /auth/password
+```
 
-## 🚀 Como Executar o Projeto Localmente
-### 🔧 Pré-requisitos
+### Fluxo de Login
 
-Certifique-se de ter as seguintes ferramentas instaladas antes de executar o projeto:
+#### Requisição
+```bash
+  POST /auth/login
+  {
+    "username": "admin",
+    "password": "admin"
+  }
+```
+Resposta
+```json
+{
+  "token": "Bearer eyJhbGciOiJIUzI1NiJ9..."
+}
+```
+### Autorização
+Enviar nas rotas protegidas:
 
-- [Java 17+](https://www.oracle.com/java/technologies/javase-jdk17-downloads.html) 
-- [Maven 3.8+](https://maven.apache.org/) 
-- [Docker](https://www.docker.com/) (opcional, se quiser usar container para banco) - Banco de dados PostgreSQL (padrão) ou compatível configurado
+---
+## 📦 Cacheamento de Cursos
+O cacheamento evita reprocessar cursos já coletados recentemente.
+
+### Funcionamento
+Ao coletar um curso, gera-se um hash exclusivo
+
+Verifica-se a existência do hash na tabela course_cache
+
+Se existir → coleta ignorada
+
+Se não existir → curso persistido e cache atualizado
+
+### Benefícios
+ - Redução de requisições HTTP desnecessárias
+
+ - Menor carga nos scrapers
+
+ - Maior velocidade de resposta
+
+ - Evita duplicidade
+
+---
+
+## 🚀 Como Executar o Projeto
+### 1️⃣ Pré-requisitos
+- [Java 17+](https://www.oracle.com/java/technologies/javase-jdk17-downloads.html)
+- [Maven 3.8+](https://maven.apache.org/)
+- [Postgres](https://www.postgresql.org/)
+- [Docker](https://www.docker.com/) (opcional, se quiser usar container para banco)
 - [Git](https://git-scm.com/install/windows) para clonar o repositório
 
-### 🐘 Banco de Dados (opcional via Docker)
+### 2️⃣ Clonar o repositório
+```bash
+  git clone https://github.com/AndreFSRamos/course-scraper.git
+  cd course-scraper
+```
 
+### 3️⃣ Criar .env
+```ini
+  DB_URL=jdbc:postgresql://localhost:5432/courses?sslmode=disable
+  DB_USER=app_user
+  DB_PASS=app_pass
+  TELEGRAM_BOT_TOKEN=TOKEN_AQUI
+  TELEGRAM_CHAT_ID=-100ID_AQUI
+  PLATFORM_EVG_ENABLED=true
+  PLATFORM_FGV_ENABLED=true
+  PLATFORM_SEBRAE_ENABLED=true
+  DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/.../...
+  SWAGGER_SERVER_URL=http://localhost:8080/scraper
+  JWT_SECRET=<SUA SECRET KEY>
+```
+
+### 4️⃣ Subir banco via Docker (opcional)
 Se desejar subir o banco de dados localmente usando Docker Compose, crie um arquivo chamado docker-compose.yml na raiz do projeto com o seguinte conteúdo:
 ```ymal
 version: "3.9"
@@ -145,86 +220,78 @@ Para iniciar o banco e o painel de administração (Adminer):
   docker compose up -d
 ```
 
-🔹 O banco PostgreSQL ficará disponível em localhost:5432
+ - O banco PostgreSQL ficará disponível em http://localhost:5432
 
-🔹 O Adminer poderá ser acessado em http://localhost:8081
+ - O Adminer poderá ser acessado em http://localhost:8081
 
-### 🧰 Passo a Passo de Execução
+### Aplicação disponível em:
 
-1️⃣ Clonar o repositório:
+  - http://localhost:8080
 
-git clone https://github.com/AndreFSRamos/course-scraper.git
+  - Swagger UI: http://localhost:8080/swagger-ui/index.html
 
+ ---
 
-2️⃣ Acessar o diretório do projeto:
+## 📡 Endpoints da API
+### Públicos
+| **Método** | **Endpoint**      | **Descrição**                      |
+|------------|-------------------|------------------------------------|
+| **GET**    | `/api/v1/courses` | Lista cursos com filtros opcionais |
 
-cd course-scraper
+### Protegidos (JWT)
 
+| **Método** | **Endpoint**                | **Papel**          |
+|------------|-----------------------------|--------------------|
+| **POST**   | `/admin/collect/{platform}` | ADMIN              |
+| **PUT**    | 	`/auth/password`         |  admin / collector |
+| **POST**   | `/auth/login`               | Público            |
 
-3️⃣ Abrir o projeto em sua IDE preferida
-Recomenda-se o uso do IntelliJ IDEA ou VS Code com o plugin Spring Boot Extension Pack.
+ ---
 
-4️⃣ Criar o arquivo .env na raiz do projeto
-Adicione as seguintes variáveis de ambiente:
-
-```text
-DB_URL=jdbc:postgresql://localhost:5432/courses?sslmode=disable
-DB_USER=app_user
-DB_PASS=app_pass
-TELEGRAM_BOT_TOKEN=CHAVE_AQUI
-TELEGRAM_CHAT_ID=-100CANAL
-PLATFORM_EVG_ENABLED=true
-PLATFORM_FGV_ENABLED=true
-PLATFORM_SEBRAE_ENABLED=true
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/XXX/ZZZ
-```
-
-#### ⚠️ Substitua CHAVE_AQUI, DISCORD_WEBHOOK_URL e -100CANAL pelos valores reais do seu bot e canal no Telegram.
-
-5️⃣ Compilar e empacotar o projeto:
+## 🧪 Exemplos de Uso
+Listar cursos gratuitos da EVG
 ```bash
-./mvnw clean package
+     curl "http://localhost:8080/api/v1/courses?platform=evg&free=true"
 ```
-6️⃣ Executar o JAR gerado:
-```bash
-java -jar target/course-scraper-0.0.1-SNAPSHOT.jar
-```
-A aplicação iniciará em http://localhost:8080
-.
-As migrações do banco de dados serão aplicadas automaticamente via Flyway.
 
-## 📡 Endpoints Principais
-| **Método** | **Endpoint** | **Descrição** |
-|--------|----------|-----------|
-| **POST** | /admin/collect/{platform} | Inicia a coleta manual para uma plataforma específica (evg, fgv, sebrae).|
-| **GET**	| /api/v1/courses| Lista os cursos mais recentes, com filtros opcionais: platform, area, free, since, page, size.|
-
-### 🧪 Exemplo de uso
-#### Coletar cursos manualmente da FGV
+Coletar cursos da FGV (ADMIN)
 ```bash
-curl -X POST http://localhost:8080/admin/collect/fgv
+     curl -X POST http://localhost:8080/admin/collect/fgv \
+     -H "Authorization: Bearer <token>"
 ```
-#### Listar cursos gratuitos da EVG
-```bash
-curl "http://localhost:8080/api/v1/courses?platform=evg&free=true&page=0&size=20"
-```
-#### Filtrar por área de Tecnologia e data
-```bash
-curl "http://localhost:8080/api/v1/courses?area=Tecnologia&since=2025-11-01T00:00:00Z"
-```
-## 🧭 Tarefas Automáticas
-Tarefa	Frequência	Classe
-Coleta de cursos	A cada 12h	CollectScheduler
-Notificação de pendentes	A cada 60s	PendingNotifierJob
-## 🧱 Banco de Dados
 
-A estrutura é versionada via Flyway (/resources/db.migration):
+Filtrar por área e data
+```bash
+     curl "http://localhost:8080/api/v1/courses?area=Tecnologia&since=2025-11-01T00:00:00Z"
+```
 
-| **Versão** | **Arquivo** |	**Descrição** |
-|------------|-------------|----------------|
-| **V1** | V1__init.sql | Criação das tabelas principais |
-| **V2** | V2__seed_platforms.sql |	Inserção das plataformas padrão (EVG, FGV, Sebrae)|
-| **V3** | V3__add_notified_at.sql | Adição do campo de controle de notificação|
+---
+
+### 🧭 Tarefas Automáticas
+| **Tarefa**            | **Frequência** | **Classe**          |
+|-----------------------|----------------|---------------------|
+| Coleta periódica      | a cada 12h     | CollectScheduler    |
+| Reenvio de pendências | 	a cada 60s    | 	PendingNotifierJob |
+
+---
+
+## 🗃️ Banco de Dados
+Scripts Flyway localizados em:
+
+````text
+     src/main/resources/db/migration/
+````
+Versões disponíveis:
+
+| **Versão** | **Descrição**                      |
+|------------|------------------------------------|
+| V1         | 	Estrutura inicial                 |
+| V2         | 	Seed de plataformas               |
+| V3         | 	Campo notified_at                 |
+| V4         | 	Estrutura de cache (course_cache) |
+| V5         | 	Seed de usuários admin            |
+
+---
 
 ## 🧩 Fluxo Geral do Sistema
     A[CollectScheduler / AdminController] --> B[CollectCoursesService]
@@ -243,22 +310,27 @@ A estrutura é versionada via Flyway (/resources/db.migration):
     
     G -->|falha| I[PendingNotifierJob → reenviar]
 
+---
+
 ## 🤝 Contribuições
-Contribuições são bem-vindas!
-Para colaborar:
+ - #### Faça um fork
 
-Faça um fork do projeto;
+ - #### Crie uma branch (feature/nome-da-feature)
 
-Crie uma branch (feature/nome-da-feature);
+ - #### Envie um Pull Request
 
-Envie um pull request.
+---
 
 ## 📄 Licença
 Este projeto é distribuído sob a licença MIT.
+
 Consulte o arquivo LICENSE para mais detalhes.
+
+---
 
 ## 👨‍💻 Autor
 André Felipe da Silva Ramos
-💼 Desenvolvedor Full Stack
-📧 https://andrefsramos.tech/
 
+💼 Desenvolvedor Full Stack
+
+📧 https://andrefsramos.tech/

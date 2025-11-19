@@ -1,4 +1,4 @@
-package tech.andrefsramos.course_scraper.adapters.inbound.api;
+package tech.andrefsramos.course_scraper.adapters.inbound.api.course;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,12 +21,12 @@ import java.util.List;
 
 /**
  * CoursesController
- *
+
  * Descrição geral:
  * - Controlador REST (versão v1) para consulta paginada de cursos armazenados pelo sistema.
  * - Expõe o endpoint GET /api/v1/courses com filtros por plataforma, área, gratuidade (free),
  *   e data mínima de atualização/criação (since).
- *
+
  * Responsabilidades:
  * - Validar e normalizar parâmetros de consulta recebidos via query string.
  * - Invocar o caso de uso {@link QueryLatestCoursesUseCase} para obter os cursos.
@@ -34,7 +34,58 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1")
-@Tag(name="02 - Cursos")
+@Tag(
+        name="03",
+        description = """
+        ## Courses — Consulta de cursos coletados
+        ---
+        Este módulo disponibiliza endpoints públicos para consulta dos cursos
+        coletados pelo sistema a partir das plataformas suportadas (EVG, FGV e Sebrae).
+
+        Ele oferece uma forma simples e eficiente de acessar o catálogo consolidado,
+        permitindo aplicar filtros avançados como plataforma, área temática,
+        gratuidade, corte temporal (`since`) e paginação completa (`page`, `size`).
+
+        ### 🎯 Finalidade do módulo
+        - Listar cursos mais recentes coletados
+        - Permitir filtros detalhados via query params
+        - Facilitar integrações externas (dashboards, aplicativos, automações)
+        - Expor dados normalizados e padronizados para consulta pública
+
+        ### 🌐 Acesso
+        Os endpoints deste módulo são **totalmente públicos**, não exigindo autenticação,
+        podendo ser acessados livremente por qualquer integração ou aplicação cliente.
+
+        ### 📦 Dados retornados
+        Cada curso retornado contém informações normalizadas, como:
+        - Título
+        - Plataforma de origem
+        - URL do curso
+        - Área temática
+        - Indicadores de gratuidade
+        - Datas de coleta e atualização
+        - Status e informações adicionais específicas da plataforma
+
+        ### ⚙️ Filtros disponíveis
+        - **platform**: EVG, FGV ou Sebrae
+        - **area**: área temática (ex.: Tecnologia, Gestão)
+        - **free**: retorna apenas cursos gratuitos (padrão = true)
+        - **since**: retorna cursos atualizados após o horário informado
+        - **page e size**: controle completo de paginação
+
+        ### 📌 Público-alvo
+        Este módulo é voltado para:
+        - Ferramentas de recomendação
+        - Dashboards de estudo e produtividade
+        - Scripts de automação
+        - Aplicações mobile
+        - Integrações com bots (Telegram, Discord, etc.)
+
+        ---
+        Os dados retornados refletem exatamente o estado mais recente da coleta,
+        garantindo consistência entre plataformas distintas e facilitando
+        o consumo unificado de cursos gratuitos disponíveis na web.
+        """)
 public class CoursesController {
 
     private static final Logger log = LoggerFactory.getLogger(CoursesController.class);
@@ -49,26 +100,26 @@ public class CoursesController {
     @Operation(
             summary = "Lista cursos mais recentes",
             description = """
-        Retorna uma lista paginada de cursos coletados pelo sistema, ordenados do mais recente para o mais antigo.
+                Retorna uma lista paginada de cursos coletados pelo sistema, ordenados do mais recente para o mais antigo.
+            
+                Este endpoint permite aplicar filtros opcionais por plataforma, área temática, gratuidade
+                e um corte temporal (since) baseado em Instant em formato ISO8601.
         
-        Este endpoint permite aplicar filtros opcionais por plataforma, área temática, gratuidade
-        e um corte temporal (`since`) baseado em `Instant` em formato ISO8601.
-
-        ### 🧩 Casos de uso típicos
-        - Construir dashboards de cursos filtrados por plataforma (EVG, FGV, Sebrae).
-        - Exibir apenas cursos gratuitos (`free=true`).
-        - Listar somente cursos atualizados/registrados após uma data e hora específica.
-        - Paginar resultados para consumo eficiente em apps ou integrações externas.
-
-        ### 🔎 Ordenação
-        Os itens retornados são ordenados internamente pelo critério definido na persistência
-        (normalmente `updatedAt DESC`).
-
-        ### ⚠️ Cuidados
-        - O parâmetro `since` deve estar em formato ISO8601 (`2025-01-01T00:00:00Z`).
-        - O tamanho da página (`size`) é limitado a **100** itens.
-        - Valores inválidos em `page`, `size` ou `since` resultam em `400 Bad Request`.
-        """,
+                🧩 Casos de uso típicos
+                - Construir dashboards de cursos filtrados por plataforma (EVG, FGV, Sebrae).
+                - Exibir apenas cursos gratuitos (free=true).
+                - Listar somente cursos atualizados/registrados após uma data e hora específica.
+                - Paginar resultados para consumo eficiente em apps ou integrações externas.
+        
+                🔎 Ordenação
+                Os itens retornados são ordenados internamente pelo critério definido na persistência
+                (normalmente updatedAt DESC).
+        
+                ⚠️ Cuidados
+                - O parâmetro since deve estar em formato ISO8601 (2025-01-01T00:00:00Z).
+                - O tamanho da página (size) é limitado a 100 itens.
+                - Valores inválidos em page, size ou since resultam em 400 Bad Request.
+            """,
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -109,7 +160,7 @@ public class CoursesController {
                     ),
                     @ApiResponse(
                             responseCode = "400",
-                            description = "Algum parâmetro de entrada está inválido. Verifique `page`, `size` ou o formato de `since`."
+                            description = "Algum parâmetro de entrada está inválido. Verifique page, size ou o formato de since."
                     ),
                     @ApiResponse(
                             responseCode = "500",
@@ -120,8 +171,8 @@ public class CoursesController {
     public ResponseEntity<List<Course>> list(
             @Parameter(
                     description = """
-                Plataforma de origem dos cursos.  
-                Valores aceitos: `evg`, `fgv`, `sebrae`.  
+                Plataforma de origem dos cursos.
+                Valores aceitos: evg, fgv, sebrae.
                 Quando omitido, não aplica filtro por plataforma.
             """,
                     example = "fgv"
@@ -130,18 +181,17 @@ public class CoursesController {
 
             @Parameter(
                     description = """
-                Área temática dos cursos (ex.: Tecnologia, Gestão, Finanças).  
+                Área temática dos cursos (ex.: Tecnologia, Gestão, Finanças).
                 O filtro é aplicado exatamente conforme salvo na base.
-            """,
-                    example = ""
+            """
             )
             @RequestParam(required = false) String area,
 
             @Parameter(
                     description = """
-                Indica se devem ser retornados apenas cursos gratuitos.  
-                - `true` (padrão): retorna somente cursos com flag de gratuidade.  
-                - `false`: retorna todos os cursos, independentemente de serem pagos/gratuitos.
+                Indica se devem ser retornados apenas cursos gratuitos.
+                - true (padrão): retorna somente cursos com flag de gratuidade.
+                - false: retorna todos os cursos, independentemente de serem pagos/gratuitos.
             """,
                     example = "true"
             )
@@ -149,9 +199,9 @@ public class CoursesController {
 
             @Parameter(
                     description = """
-                Retorna apenas cursos criados/atualizados **a partir deste horário**.  
-                Formato: `Instant` ISO8601 (ex.: `2025-01-10T00:00:00Z`).  
-                Caso enviado em formato inválido, retorna `400 Bad Request`.
+                Retorna apenas cursos criados/atualizados a partir deste horário.
+                Formato: Instant` ISO8601 (ex.: 2025-01-10T00:00:00Z).
+                Caso enviado em formato inválido, retorna 400 Bad Request.
             """,
                     example = "2025-01-10T00:00:00Z"
             )
@@ -159,8 +209,8 @@ public class CoursesController {
 
             @Parameter(
                     description = """
-                Número da página (base 0).  
-                Deve ser >= 0. Valores negativos resultam em `400 Bad Request`.
+                Número da página (base 0).
+                Deve ser >= 0. Valores negativos resultam em 400 Bad Request.
             """,
                     example = "0"
             )
@@ -168,9 +218,9 @@ public class CoursesController {
 
             @Parameter(
                     description = """
-                Quantidade de itens por página.  
-                Valor padrão: 20.  
-                Máximo permitido: 100.  
+                Quantidade de itens por página.
+                Valor padrão: 20.
+                Máximo permitido: 100.
                 Valores <= 0 são substituídos por 20; valores > 100 são limitados a 100.
             """,
                     example = "20"

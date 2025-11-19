@@ -50,6 +50,10 @@ swagger-ui-themes:
 
 
 app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-this-secret-in-prod}
+      expiration: 86400000
   timezone: America/Sao_Paulo
   platforms:
     enabled: evg,fgv,sebrae
