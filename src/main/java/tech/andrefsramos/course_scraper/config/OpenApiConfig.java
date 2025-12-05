@@ -27,13 +27,13 @@ import org.springframework.context.annotation.Configuration;
                                 Bem-vindo à documentação oficial da API **Scraper**, um serviço inteligente que coleta, organiza e disponibiliza cursos **gratuitos e online** de fontes públicas, mantendo tudo atualizado automaticamente.
                                 
                                 Atualmente, a API integra:
-                                - **EVG** — Escola Virtual de Governo  
-                                - **FGV Educação Executiva** — cursos gratuitos online  
-                                - **Sebrae** — cursos online gratuitos  
+                                - **EVG** — Escola Virtual de Governo
+                                - **FGV Educação Executiva** — cursos gratuitos online
+                                - **Sebrae** — cursos online gratuitos
                                 
                                 A proposta é reunir tudo em um **catálogo centralizado, fácil de consultar**, acessível via HTTP e pronto para integrações com aplicativos, dashboards e sistemas de aprendizado automatizados.
                                 
-                                > ⚠️ **Aviso importante**  
+                                > ⚠️ **Aviso importante**
                                 > Este serviço **não tem vínculo** com as instituições de origem.  
                                 > Ele apenas organiza informações públicas, obtidas via scraping.
                                 
